@@ -84,14 +84,14 @@ class Dataset3DasCuts(Dataset):
         sx,sy,sz = self.sample_size        
         for n in range(self.batch_size):
 
-            rx = random.randint(0, self.shape[0] - sx - 1)
-            cx = random.randint(0, sx)
+            rx = random.randint(0, self.shape[0] - sx)
+            cx = random.randint(0, sx-1)
             
-            ry = random.randint(0, self.shape[1] - sy - 1)
-            cy = random.randint(0, sy)
+            ry = random.randint(0, self.shape[1] - sy)
+            cy = random.randint(0, sy-1)
         
             rz = random.randint(0, self.shape[2] - sz)
-            cz = random.randint(0, sz)
+            cz = random.randint(0, sz-1)
 
             sample[n,0,...] = self.img[rx + cx, ry:ry+sy, rz:rz+sz]
             sample[n,1,...] = self.img[rx:rx+sx, ry+cy, rz:rz+sz]
