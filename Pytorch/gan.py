@@ -72,7 +72,7 @@ class Generator(nn.Module):
         return x/6 # for numbers in interval [0;1] and not [0;6]        
 
 
-    def generate(self, batch_size, device="cuda"):
+    def generate(self, batch_size=1, device="cuda"):
         return self.forward(get_noise((batch_size,self.noise_size)).to(device))
 
 
