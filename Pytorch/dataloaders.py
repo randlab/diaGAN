@@ -36,14 +36,14 @@ class Dataset3Cuts(Dataset):
         sample = torch.zeros((self.batch_size, 3,) + self.sample_size[:2] )
         for n in range(self.batch_size):
 
-            rxx = random.randint(0, self.shape_x[0] - self.sample_size[1])
-            rxy = random.randint(0, self.shape_x[1] - self.sample_size[2])
+            rxx = random.randint(0, self.shape_x[0] - self.sample_size[1]-1)
+            rxy = random.randint(0, self.shape_x[1] - self.sample_size[2]-1)
 
-            ryx = random.randint(0, self.shape_y[0] - self.sample_size[0])
-            ryy = random.randint(0, self.shape_y[1] - self.sample_size[2])
+            ryx = random.randint(0, self.shape_y[0] - self.sample_size[0]-1)
+            ryy = random.randint(0, self.shape_y[1] - self.sample_size[2]-1)
 
-            rzx = random.randint(0, self.shape_z[1] - self.sample_size[0])
-            rzy = random.randint(0, self.shape_z[1] - self.sample_size[1])
+            rzx = random.randint(0, self.shape_z[1] - self.sample_size[0]-1)
+            rzy = random.randint(0, self.shape_z[1] - self.sample_size[1]-1)
 
             sample[n,0,...] = self.img_x[rxx:rxx + self.sample_size[1], rxy:rxy+self.sample_size[2]]
             sample[n,1,...] = self.img_y[ryx:ryx + self.sample_size[0], ryy:ryy+self.sample_size[2]]

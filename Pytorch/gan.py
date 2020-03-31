@@ -22,35 +22,41 @@ class Generator(nn.Module):
             nn.Linear(self.noise_size, self.embed_size),
             nn.ReLU6(),
         )
+        self.LinEmb = nn.DataParallel(self.LinEmb)
 
         self.conv1 = nn.Sequential(
             nn.Conv3d(1, 128, kernel_size=3, padding=1),
             nn.InstanceNorm3d(128),
             nn.ReLU6(),
         )
+        self.conv1 = nn.DataParallel(self.conv1)
 
         self.conv2 = nn.Sequential(
             nn.Conv3d(128, 128, kernel_size=3, padding=1),
             nn.InstanceNorm3d(128),
             nn.ReLU6(),
         )
+        self.conv2 = nn.DataParallel(self.conv2)
 
         self.conv3 = nn.Sequential(   
             nn.Conv3d(128, 64, kernel_size=3, padding=1),
             nn.InstanceNorm3d(64),
             nn.ReLU6(),
         )
+        self.conv3 = nn.DataParallel(self.conv3)
         
         self.conv4 = nn.Sequential(   
             nn.Conv3d(64, 32, kernel_size=3, padding=1),
             nn.InstanceNorm3d(32),
             nn.ReLU6(),
         )
+        self.conv4 = nn.DataParallel(self.conv4)
 
         self.conv5 = nn.Sequential(
             nn.Conv3d(32, 1,  kernel_size=3, padding=1),
             nn.ReLU6()
         )
+        self.conv5 = nn.DataParallel(self.conv5)
     
 
     def forward(self, x):
@@ -73,6 +79,8 @@ class Generator(nn.Module):
 
 
     def generate(self, batch_size=1, device="cuda"):
+        if not torch.cuda.is_available():
+            device = "cpu"
         return self.forward(get_noise((batch_size,self.noise_size)).to(device))
 
 
@@ -86,32 +94,38 @@ class Critic(nn.Module):
                 nn.ReLU(),
                 nn.MaxPool2d(2)
         )
+        self.Lconv1 = nn.DataParallel(self.Lconv1)
 
         self.Lconv2 = nn.Sequential(
                 nn.Conv2d(8, 16, kernel_size=(3,3), padding=1),
                 nn.ReLU(),
                 nn.MaxPool2d(2)
         )
+        self.Lconv2 = nn.DataParallel(self.Lconv2)
 
         self.Lconv3 = nn.Sequential(
                 nn.Conv2d(16, 32, kernel_size=(3,3), padding=1),
                 nn.ReLU(),
                 nn.MaxPool2d(2)
         )
+        self.Lconv3 = nn.DataParallel(self.Lconv3)
 
         self.Lconv4 = nn.Sequential(
                 nn.Conv2d(32, 64, kernel_size=(3,3), padding=1),
                 nn.ReLU(),
                 nn.MaxPool2d(2)
         )
+        self.Lconv4 = nn.DataParallel(self.Lconv4)
 
         self.Lconv5 = nn.Sequential(
                 nn.Conv2d(64, 128, kernel_size=(3,3), padding=1),
                 nn.ReLU()
         )
+        self.Lconv5 = nn.DataParallel(self.Lconv5)
 
         self.Loutput = nn.Linear(128,1)
-
+        self.Loutput = nn.DataParallel(self.Loutput)
+        
     def forward(self, x):
         
         x = self.Lconv1(x)
