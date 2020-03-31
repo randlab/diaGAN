@@ -9,9 +9,13 @@ import torch
 from gan import Generator
 from tqdm import tqdm
 
+GRAY = '#a0a0a0'
+ALPHA = 0.3
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("-fun", "--fun", type=str, required=True)
     parser.add_argument('-model', "--model", type=str, required=True)
     parser.add_argument('-ti', "--ti", type=str, required=True)
     parser.add_argument('-output', "--output", type=str, default="output.csv")
@@ -19,17 +23,24 @@ if __name__=="__main__":
     parser.add_argument("-n-ti", "--n-ti", type=int, default=10)
 
     args = parser.parse_args()
-    model = Generator(256).to("cpu")
-    model.load_state_dict(torch.load(args.model, map_location="cpu"))
+    model = Generator(256)
+    if not torch.cuda.is_available():
+        model = model.to("cpu")
+        model.load_state_dict(torch.load(args.model, map_location="cpu"))
+    else:
+        model = model.to("cuda")
+        model.load_state_dict(torch.load(args.model))
 
-   if ".vox" in args.ti:
-        ti = Image.fromVox(args.ti).asArray()
+    if ".vox" in args.ti:
+        ti = Image.fromVox(args.ti)
+        ti.threshold(thresholds=[254],values=[0,1])
+        ti = ti.asArray()
     elif ".gslib" in args.ti:
         ti = Image.fromGslib(args.ti).asArray()
 
-    if args.mode == "conn":
+    if args.fun == "conn":
         stat_fun = mpstool.connectivity.get_function
-    elif args.mode == "vario":
+    elif args.fun == "vario":
         stat_fun = mpstool.stats.variogram
     else:
         raise Exception("argument mode not recognized. Should be 'conn' or 'vario' ")
@@ -47,13 +58,12 @@ if __name__=="__main__":
     cZ_ti_max = {}
     cZ_ti_mean = {}
 
-    ti_size = ti.shape
-    sample_size = model.generate().shape
+    sample_size = model.generate().to("cpu").size()[2:]
 
     for n in tqdm(range(args.n_ti)):
-        ix = randint(0, ti_size[0]-sample_size[0]-1)
-        iy = randint(0, ti_size[1]-sample_size[1]-1)
-        iz = randint(0, ti_size[2]-sample_size[2]-1)
+        ix = randint(0, ti.shape[0]-sample_size[0]-1)
+        iy = randint(0, ti.shape[1]-sample_size[1]-1)
+        iz = randint(0, ti.shape[2]-sample_size[2]-1)
 
         sample = ti[ix:ix+sample_size[0], iy:iy+sample_size[1], iz:iz+sample_size[2]]
 
@@ -85,7 +95,9 @@ if __name__=="__main__":
     cZ_mean = {}
 
     for n in tqdm(range(args.n_samples)):
-        image = model.generate()
+        image = model.generate().to("cpu").detach().numpy() * 255
+        image = np.squeeze(image).astype(np.uint8)
+        image = Image.fromArray(image)
         image.threshold(thresholds=[254],values=[0,1])
 
         connZ = stat_fun(image, axis=2)
@@ -109,30 +121,33 @@ if __name__=="__main__":
 
     for i, c in enumerate(categories):
         # X axis
+        axs[i,0].fill_between(range(len(cY_ti_min[c])), cX_ti_min[c], cX_ti_max[c], color=GRAY)
         for smpl in cX:
-            axs[i,0].plot(smpl[c], color='green')
+            axs[i,0].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,0].plot(cX_mean[c], color='red')
-        axs[i,0].plot(cX_ti_min[c], color='blue', linestyle="--")
-        axs[i,0].plot(cX_ti_max[c], color='blue', linestyle="--")
-        axs[i,0].plot(cX_ti_mean[c], color='blue')
+        #axs[i,0].plot(cX_ti_min[c], color=GRAY)
+        #axs[i,0].plot(cX_ti_max[c], color=GRAY)
+        #axs[i,0].plot(cX_ti_mean[c], color='blue')
         axs[i,0].set_title("Facies {}, Orientation X".format(i))
 
         # Y axis
+        axs[i,1].fill_between(range(len(cY_ti_min[c])), cY_ti_min[c], cY_ti_max[c], color=GRAY)
         for smpl in cY:
-            axs[i,1].plot(smpl[c], color='green')
+            axs[i,1].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,1].plot(cY_mean[c], color='red')
-        axs[i,1].plot(cY_ti_min[c], color='blue', linestyle="--")
-        axs[i,1].plot(cY_ti_max[c], color='blue', linestyle="--")
-        axs[i,1].plot(cY_ti_mean[c], color='blue')
+        #axs[i,1].plot(cY_ti_min[c], color=GRAY)
+        #axs[i,1].plot(cY_ti_max[c], color=GRAY)
+        #axs[i,1].plot(cY_ti_mean[c], color='blue')
         axs[i,1].set_title("Facies {}, Orientation Y".format(i))
         
         # Z axis
+        axs[i,2].fill_between(range(len(cY_ti_min[c])), cZ_ti_min[c], cZ_ti_max[c], color=GRAY)
         for smpl in cZ:
-            axs[i,2].plot(smpl[c], color='green')
+            axs[i,2].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,2].plot(cZ_mean[c], color='red')
-        axs[i,2].plot(cZ_ti_min[c], color='blue', linestyle="--")
-        axs[i,2].plot(cZ_ti_max[c], color='blue', linestyle="--")
-        axs[i,2].plot(cZ_ti_mean[c], color='blue')
+        #axs[i,2].plot(cZ_ti_min[c], color=GRAY)
+        #axs[i,2].plot(cZ_ti_max[c], color=GRAY)
+        #axs[i,2].plot(cZ_ti_mean[c], color='blue')
         axs[i,2].set_title("Facies {}, Orientation Z".format(i))
 
     # Hide x labels and tick labels for top plots and y ticks for right plots.

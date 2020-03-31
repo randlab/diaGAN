@@ -174,6 +174,6 @@ if __name__=="__main__":
         train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, 3, args, device)
         if epoch%args.checkpoint_freq==0:
-            torch.save("output/gen_e{}.model".format(epoch), generator.state_dict())
+            torch.save(generator.state_dict(), "output/gen_e{}.model".format(epoch))
 
     
