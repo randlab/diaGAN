@@ -19,8 +19,8 @@ if __name__=="__main__":
     parser.add_argument('-model', "--model", type=str, required=True)
     parser.add_argument('-ti', "--ti", type=str, required=True)
     parser.add_argument('-output', "--output", type=str, default="output.csv")
-    parser.add_argument("-n-samples", "--n-samples", type=int, default=30)
-    parser.add_argument("-n-ti", "--n-ti", type=int, default=10)
+    parser.add_argument("-n-samples", "--n-samples", type=int, default=100)
+    parser.add_argument("-n-ti", "--n-ti", type=int, default=100)
 
     args = parser.parse_args()
     model = Generator(256)
@@ -48,15 +48,12 @@ if __name__=="__main__":
     # Read connectivity for the TI : min and max of values
     cX_ti_min= {}
     cX_ti_max= {}
-    cX_ti_mean = {}
 
     cY_ti_min = {}
     cY_ti_max = {}
-    cY_ti_mean = {}
 
     cZ_ti_min = {}
     cZ_ti_max = {}
-    cZ_ti_mean = {}
 
     sample_size = model.generate().to("cpu").size()[2:]
 
@@ -70,21 +67,14 @@ if __name__=="__main__":
         connX = stat_fun(sample, axis=1)
         cX_ti_min = { k: np.minimum(cX_ti_min.get(k, 1), connX.get(k, 1)) for k in set(connX) }
         cX_ti_max = { k: np.maximum(cX_ti_max.get(k, 0), connX.get(k, 0)) for k in set(connX) }
-        cX_ti_mean = { k: cX_ti_mean.get(k, 0) + connX.get(k, 0) for k in set(connX) }
 
         connY = stat_fun(sample, axis=0)
         cY_ti_min = { k: np.minimum(cY_ti_min.get(k, 1), connY.get(k, 1)) for k in set(connY) }
         cY_ti_max = { k: np.maximum(cY_ti_max.get(k, 0), connY.get(k, 0)) for k in set(connY) }
-        cY_ti_mean = { k: cY_ti_mean.get(k, 0) + connY.get(k, 0) for k in set(connY) }
 
         connZ = stat_fun(sample, axis=2)
         cZ_ti_min = { k: np.minimum(cZ_ti_min.get(k, 1), connZ.get(k, 1)) for k in set(connZ) }
         cZ_ti_max = { k: np.maximum(cZ_ti_max.get(k, 0), connZ.get(k, 0)) for k in set(connZ) }
-        cZ_ti_mean = { k: cZ_ti_mean.get(k, 0) + connZ.get(k, 0) for k in set(connZ) }
-
-    cX_ti_mean = {k: cX_ti_mean.get(k,0)/args.n_ti for k in cX_ti_mean.keys()}
-    cY_ti_mean = {k: cY_ti_mean.get(k,0)/args.n_ti for k in cY_ti_mean.keys()}
-    cZ_ti_mean = {k: cZ_ti_mean.get(k,0)/args.n_ti for k in cZ_ti_mean.keys()}
 
     # Read connectivity for the realizations
     cX = []
@@ -117,6 +107,10 @@ if __name__=="__main__":
     cZ_mean = {k: cZ_mean.get(k,0)/args.n_samples for k in cZ_mean.keys()}
     categories = mpstool.connectivity.get_categories(image)
 
+    vario_two = False # if variogram with two facies, plot only for one facies, since both variograms are identical
+    if args.fun=="vario" and len(categories)==2:
+        vario_two = True
+
     fig, axs = plt.subplots(len(categories), 3)
 
     for i, c in enumerate(categories):
@@ -125,35 +119,29 @@ if __name__=="__main__":
         for smpl in cX:
             axs[i,0].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,0].plot(cX_mean[c], color='red')
-        #axs[i,0].plot(cX_ti_min[c], color=GRAY)
-        #axs[i,0].plot(cX_ti_max[c], color=GRAY)
-        #axs[i,0].plot(cX_ti_mean[c], color='blue')
-        axs[i,0].set_title("Facies {}, Orientation X".format(i))
+        title = "Orientation X" if vario_two else "Facies {}, Orientation X".format(i)
+        axs[i,0].set_title(title)
 
         # Y axis
         axs[i,1].fill_between(range(len(cY_ti_min[c])), cY_ti_min[c], cY_ti_max[c], color=GRAY)
         for smpl in cY:
             axs[i,1].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,1].plot(cY_mean[c], color='red')
-        #axs[i,1].plot(cY_ti_min[c], color=GRAY)
-        #axs[i,1].plot(cY_ti_max[c], color=GRAY)
-        #axs[i,1].plot(cY_ti_mean[c], color='blue')
-        axs[i,1].set_title("Facies {}, Orientation Y".format(i))
+        title = "Orientation X" if vario_two else "Facies {}, Orientation Y".format(i)
+        axs[i,1].set_title(title)
         
         # Z axis
         axs[i,2].fill_between(range(len(cY_ti_min[c])), cZ_ti_min[c], cZ_ti_max[c], color=GRAY)
         for smpl in cZ:
             axs[i,2].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,2].plot(cZ_mean[c], color='red')
-        #axs[i,2].plot(cZ_ti_min[c], color=GRAY)
-        #axs[i,2].plot(cZ_ti_max[c], color=GRAY)
-        #axs[i,2].plot(cZ_ti_mean[c], color='blue')
-        axs[i,2].set_title("Facies {}, Orientation Z".format(i))
+        title = "Orientation Z" if vario_two else "Facies {}, Orientation Z".format(i)
+        axs[i,2].set_title(title)
 
     # Hide x labels and tick labels for top plots and y ticks for right plots.
+    y_label = 'probability' if args.fun=="conn" else "$\gamma(t)$"
     for ax in axs.flat:
         ax.label_outer()
-        ax.set(xlabel='distance (pixels)', ylabel='probability')
+        ax.set(xlabel='distance (pixels)', ylabel=y_label)
 
     plt.show()
-

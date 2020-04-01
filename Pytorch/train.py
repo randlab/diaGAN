@@ -112,7 +112,7 @@ def generate(epoch, generator, N, args, device):
     for i in range(N):
         output = generator.generate(1, device).cpu().detach().numpy()
         output = np.squeeze(output)
-        output = output * 255
+        output = (output * 255).astype(np.uint8)
         output = Image.fromArray(output)
         output.exportAsVox("output/epoch{}_{}.vox".format(epoch, i))
 
