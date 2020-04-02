@@ -22,6 +22,15 @@ class Dataset3Cuts(Dataset):
         self.img_y = torch.Tensor(imread(img_y)) / 255.
         self.img_z = torch.Tensor(imread(img_z)) / 255.
 
+        if len(self.img_x.size()) > 2 :
+            self.img_x = self.img_x[...,0]
+
+        if len(self.img_y.size()) > 2 :
+            self.img_y = self.img_y[...,0]
+
+        if len(self.img_z.size()) > 2 :
+            self.img_z = self.img_z[...,0]
+
         self.shape_x = self.img_x.size()
         self.shape_y = self.img_y.size()
         self.shape_z = self.img_z.size()
@@ -70,8 +79,7 @@ class Dataset3DasCuts(Dataset):
         except:
             raise Exception("Image path '{}' could not be opened by mpstools".format(img_path))
 
-        self.img.normalize()
-        self.img = torch.Tensor(self.img.asArray())
+        self.img = torch.Tensor(self.img.asArray() / 255)
         
         self.shape = self.img.shape
         self.batch_size = batch_size
@@ -98,8 +106,7 @@ class Dataset3DasCuts(Dataset):
             sample[n,2,...] = self.img[rx:rx+sx, ry:ry+sy, rz+cz]
 
         if self.transform:
-            sample = self.transform(sample)
-                    
+            sample = self.transform(sample)        
         output = torch.Tensor(sample)
         return output
 

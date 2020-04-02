@@ -69,6 +69,7 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
 
             # train with real
             real_data = data.get()
+
             real_data_v = torch.autograd.Variable(real_data).to(device)
             crit_real = critic(real_data_v)
             crit_real = crit_real.mean()
