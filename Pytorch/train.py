@@ -69,6 +69,7 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
 
             # train with real
             real_data = data.get()
+
             real_data_v = torch.autograd.Variable(real_data).to(device)
             crit_real = critic(real_data_v)
             crit_real = crit_real.mean()
@@ -112,7 +113,7 @@ def generate(epoch, generator, N, args, device):
     for i in range(N):
         output = generator.generate(1, device).cpu().detach().numpy()
         output = np.squeeze(output)
-        output = output * 255
+        output = (output * 255).astype(np.uint8)
         output = Image.fromArray(output)
         output.exportAsVox("output/epoch{}_{}.vox".format(epoch, i))
 
@@ -132,6 +133,8 @@ if __name__=="__main__":
     parser.add_argument("-name", "--name", type=str, default="gen")
 
     # Optionnal Arguments
+    parser.add_argument('-binarize', '--binarize', action="store_true")
+
     parser.add_argument('--lr', type=float, default=1E-3)
 
     parser.add_argument('--batch-size', type=int, default=10)
@@ -169,12 +172,12 @@ if __name__=="__main__":
     if args.dx is not None:
         data = Dataset3Cuts(args.dx, args.dy, args.dz, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64))
     else:
-        data = Dataset3DasCuts(args.dataset, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64))
+        data = Dataset3DasCuts(args.dataset, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64), binarize=args.binarize)
 
     for epoch in range(1, args.epochs+1):
         train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, 3, args, device)
-        if epoch%args.checkpoint==0:
-            torch.save("output/{}_e{}.model".format(args.name, epoch), generator.state_dict())
+        if epoch%args.checkpoint_freq==0:
+            torch.save(generator.state_dict(), "output/{}_e{}.model".format(args.name, epoch))
 
     

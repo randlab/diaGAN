@@ -22,6 +22,15 @@ class Dataset3Cuts(Dataset):
         self.img_y = torch.Tensor(imread(img_y)) / 255.
         self.img_z = torch.Tensor(imread(img_z)) / 255.
 
+        if len(self.img_x.size()) > 2 :
+            self.img_x = self.img_x[...,0]
+
+        if len(self.img_y.size()) > 2 :
+            self.img_y = self.img_y[...,0]
+
+        if len(self.img_z.size()) > 2 :
+            self.img_z = self.img_z[...,0]
+
         self.shape_x = self.img_x.size()
         self.shape_y = self.img_y.size()
         self.shape_z = self.img_z.size()
@@ -60,7 +69,7 @@ class Dataset3Cuts(Dataset):
 
 
 class Dataset3DasCuts(Dataset):
-    def __init__(self, img_paths : list, epoch_size: int, batch_size : int, size : tuple, transform = None):
+    def __init__(self, img_paths : list, epoch_size: int, batch_size : int, size : tuple, transform = None, binarize=False):
         
         self.imgs = []
         for path in img_paths:
@@ -73,10 +82,8 @@ class Dataset3DasCuts(Dataset):
 
         for i, img in enumerate(self.imgs):
             if binarize:
-                img.threshold([1], [0,1])
-            else:
-                img.normalize()
-            self.imgs[i] = torch.Tensor(img.asArray())
+                img.threshold([1], [0,255])
+            self.imgs[i] = torch.Tensor(img.asArray() / 255.)
 
         self.shape = [img.shape for img in self.imgs]
         self.batch_size = batch_size
@@ -92,17 +99,14 @@ class Dataset3DasCuts(Dataset):
 
             ind_img = random.randint(0, len(self.imgs)-1)
             simg = self.imgs[ind_img]
-            
-            rx = random.randint(0, self.shape[ind_img][0] - sx - 1)
+
+            rx = random.randint(0, self.shape[ind_img][0] - sx)
             cx = random.randint(0, sx-1)
             
-            ry = random.randint(0, self.shape[ind_img][1] - sy - 1)
+            ry = random.randint(0, self.shape[ind_img][1] - sy)
             cy = random.randint(0, sy-1)
         
-            if self.shape[ind_img][2] == sz:
-                rz = 0
-            else:
-                rz = random.randint(0, self.shape[ind_img][2] - sz - 1)
+            rz = random.randint(0, self.shape[ind_img][2] - sz)
             cz = random.randint(0, sz-1)
 
             sample[n,0,...] = simg[rx + cx, ry:ry+sy, rz:rz+sz]
@@ -110,8 +114,7 @@ class Dataset3DasCuts(Dataset):
             sample[n,2,...] = simg[rx:rx+sx, ry:ry+sy, rz+cz]
 
         if self.transform:
-            sample = self.transform(sample)
-                    
+            sample = self.transform(sample)        
         output = torch.Tensor(sample)
         return output
 
