@@ -126,9 +126,10 @@ if __name__=="__main__":
     parser.add_argument('-dy', type=str, default=None)
     parser.add_argument('-dz', type=str, default=None)
 
-    parser.add_argument("-dataset", type=str, default=None)
+    parser.add_argument("-dataset", type=str, default=None, nargs="+")
 
     parser.add_argument("-checkpoint-freq", type=int, default=1)
+    parser.add_argument("-name", "--name", type=str, default="gen")
 
     # Optionnal Arguments
     parser.add_argument('--lr', type=float, default=1E-3)
@@ -174,6 +175,6 @@ if __name__=="__main__":
         train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, 3, args, device)
         if epoch%args.checkpoint==0:
-            torch.save("output/gen_e{}.model".format(epoch), generator.state_dict())
+            torch.save("output/{}_e{}.model".format(args.name, epoch), generator.state_dict())
 
     

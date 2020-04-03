@@ -60,42 +60,54 @@ class Dataset3Cuts(Dataset):
 
 
 class Dataset3DasCuts(Dataset):
-    def __init__(self, img_path : str, epoch_size: int, batch_size : int, size : tuple, transform = None):
+    def __init__(self, img_paths : list, epoch_size: int, batch_size : int, size : tuple, transform = None):
         
-        try:
-            if ".gslib" in img_path:
-                self.img = Image.fromGslib(img_path)
-            elif ".vox" in img_path:
-                self.img = Image.fromVox(img_path)
-        except:
-            raise Exception("Image path '{}' could not be opened by mpstools".format(img_path))
+        self.imgs = []
+        for path in img_paths:
+            if ".gslib" in path:
+                self.imgs.append(Image.fromGslib(path))
+            elif ".vox" in path:
+                self.imgs.append(Image.fromVox(path))
+            else:
+                raise Exception("Image path '{}' could not be opened by mpstools".format(path))
 
-        self.img.normalize()
-        self.img = torch.Tensor(self.img.asArray())
-        
-        self.shape = self.img.shape
+        for i, img in enumerate(self.imgs):
+            if binarize:
+                img.threshold([1], [0,1])
+            else:
+                img.normalize()
+            self.imgs[i] = torch.Tensor(img.asArray())
+
+        self.shape = [img.shape for img in self.imgs]
         self.batch_size = batch_size
         self.epoch_size = epoch_size
         self.sample_size = size
         self.transform = transform
 
     def get(self):
+
         sample = torch.zeros((self.batch_size, 3,) + self.sample_size[:2] )
         sx,sy,sz = self.sample_size        
         for n in range(self.batch_size):
 
-            rx = random.randint(0, self.shape[0] - sx - 1)
-            cx = random.randint(0, sx)
+            ind_img = random.randint(0, len(self.imgs)-1)
+            simg = self.imgs[ind_img]
             
-            ry = random.randint(0, self.shape[1] - sy - 1)
-            cy = random.randint(0, sy)
+            rx = random.randint(0, self.shape[ind_img][0] - sx - 1)
+            cx = random.randint(0, sx-1)
+            
+            ry = random.randint(0, self.shape[ind_img][1] - sy - 1)
+            cy = random.randint(0, sy-1)
         
-            rz = random.randint(0, self.shape[2] - sz)
-            cz = random.randint(0, sz)
+            if self.shape[ind_img][2] == sz:
+                rz = 0
+            else:
+                rz = random.randint(0, self.shape[ind_img][2] - sz - 1)
+            cz = random.randint(0, sz-1)
 
-            sample[n,0,...] = self.img[rx + cx, ry:ry+sy, rz:rz+sz]
-            sample[n,1,...] = self.img[rx:rx+sx, ry+cy, rz:rz+sz]
-            sample[n,2,...] = self.img[rx:rx+sx, ry:ry+sy, rz+cz]
+            sample[n,0,...] = simg[rx + cx, ry:ry+sy, rz:rz+sz]
+            sample[n,1,...] = simg[rx:rx+sx, ry+cy, rz:rz+sz]
+            sample[n,2,...] = simg[rx:rx+sx, ry:ry+sy, rz+cz]
 
         if self.transform:
             sample = self.transform(sample)
