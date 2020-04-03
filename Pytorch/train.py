@@ -115,7 +115,7 @@ def generate(epoch, generator, N, args, device):
         output = np.squeeze(output)
         output = (output * 255).astype(np.uint8)
         output = Image.fromArray(output)
-        output.exportAsVox("output/epoch{}_{}.vox".format(epoch, i))
+        output.exportAsVox("output/sample_{}_epoch{}_{}.vox".format(args.name, epoch, i))
 
 
 if __name__=="__main__":
