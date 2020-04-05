@@ -30,6 +30,16 @@ def extract_3cuts(tensor):
         tensor[:, :, :, :, rz]
     ], dim=1) 
 
+def extract_2cuts(tensor):
+    bs,_,sx,sy,_ = tensor.size()
+    rx = torch.randint(0, sx-1, (1,))[0]
+    ry = torch.randint(0, sy-1, (1,))[0]
+
+    return torch.cat([
+        tensor[:, :, rx, :, :],
+        tensor[:, :, :, ry, :]
+    ], dim=1)
+
 
 def gradient_penalty(critic, args, device, real_data, fake_data):
     alpha = torch.FloatTensor(args.batch_size, 1, 1, 1).uniform_(0.,1.)
@@ -79,7 +89,11 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
             with torch.no_grad():
                 noise_v = torch.autograd.Variable(noise)
                 fake_data = generator(noise_v).data
-                fake_data = extract_3cuts(fake_data)
+                if critic.n_cuts==3:
+                    fake_data = extract_3cuts(fake_data)
+                elif critic.n_cuts==2:
+                    fake_data = extract_2cuts(fake_data)
+
             fake_data_v = torch.autograd.Variable(fake_data)
             crit_fake = critic(fake_data_v)
             crit_fake = crit_fake.mean()
@@ -101,7 +115,10 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
         noise = get_noise((args.batch_size,generator.noise_size)).to(device)
         noise_v = torch.autograd.Variable(noise)
         gen_out = generator(noise_v)
-        crit_in = extract_3cuts(gen_out)
+        if critic.n_cuts==3:
+            crit_in = extract_3cuts(gen_out)
+        elif critic.n_cuts==2:
+            crit_in = extract_2cuts(gen_out)
         score = critic(crit_in)
         score = score.mean()
         gen_loss = -score
