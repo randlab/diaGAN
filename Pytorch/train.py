@@ -161,18 +161,23 @@ if __name__=="__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(args.seed)
     
+    n_cuts = 3
+    if args.dx is not None:
+        if args.dz is not None:
+            data = Dataset3Cuts(args.dx, args.dy, args.dz, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64), binarize=args.binarize)
+        else :
+            data = Dataset2Cuts(args.dx, args.dy, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64), binarize=args.binarize)
+            n_cuts = 2
+    else:
+        data = Dataset3DasCuts(args.dataset, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64), binarize=args.binarize)
+
     generator = Generator(256)
-    critic = Critic()
+    critic = Critic(n_cuts)
 
     generator, critic = generator.to(device), critic.to(device)
 
     optimizer_gen = optim.Adam(generator.parameters(), lr=args.lr, betas=(0.5, 0.9))
     optimizer_crit = optim.Adam(critic.parameters(), lr=args.lr, betas=(0.5, 0.9))
-
-    if args.dx is not None:
-        data = Dataset3Cuts(args.dx, args.dy, args.dz, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64))
-    else:
-        data = Dataset3DasCuts(args.dataset, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64), binarize=args.binarize)
 
     for epoch in range(1, args.epochs+1):
         train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)

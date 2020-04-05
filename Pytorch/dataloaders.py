@@ -15,9 +15,52 @@ from imageio import imread, imsave
 import random
 from mpstool.img import *
 
+class Dataset2Cuts(Dataset):
+
+    def __init__(self, img_x : str, img_y : str, epoch_size: int, batch_size : int, size : tuple, transform = None, binarize=False):
+        self.img_x = torch.Tensor(imread(img_x)) / 255.
+        self.img_y = torch.Tensor(imread(img_y)) / 255.
+
+        if len(self.img_x.size()) > 2 :
+            self.img_x = self.img_x[...,0]
+
+        if len(self.img_y.size()) > 2 :
+            self.img_y = self.img_y[...,0]
+
+        self.shape_x = self.img_x.size()
+        self.shape_y = self.img_y.size()
+
+        self.batch_size = batch_size
+        self.epoch_size = epoch_size
+
+        self.sample_size = size
+        self.transform = transform
+
+    def get(self):
+        sample = torch.zeros((self.batch_size, 2,) + self.sample_size[:2] )
+        for n in range(self.batch_size):
+
+            rxx = random.randint(0, self.shape_x[0] - self.sample_size[1]-1)
+            rxy = random.randint(0, self.shape_x[1] - self.sample_size[2]-1)
+
+            ryx = random.randint(0, self.shape_y[0] - self.sample_size[0]-1)
+            ryy = random.randint(0, self.shape_y[1] - self.sample_size[2]-1)
+
+            sample[n,0,...] = self.img_x[rxx:rxx + self.sample_size[1], rxy:rxy+self.sample_size[2]]
+            sample[n,1,...] = self.img_y[ryx:ryx + self.sample_size[0], ryy:ryy+self.sample_size[2]]
+
+        if self.transform:
+            sample = self.transform(sample)
+                    
+        output = torch.Tensor(sample)
+        return output
+
+    def __getitem__(self, idx):
+       return self.get()
+
 class Dataset3Cuts(Dataset):
 
-    def __init__(self, img_x : str, img_y : str, img_z : str, epoch_size: int, batch_size : int, size : tuple, transform = None):
+    def __init__(self, img_x : str, img_y : str, img_z : str, epoch_size: int, batch_size : int, size : tuple, transform = None, binarize= False):
         self.img_x = torch.Tensor(imread(img_x)) / 255.
         self.img_y = torch.Tensor(imread(img_y)) / 255.
         self.img_z = torch.Tensor(imread(img_z)) / 255.
