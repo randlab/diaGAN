@@ -33,7 +33,7 @@ if __name__=="__main__":
 
     if ".vox" in args.ti:
         ti = Image.fromVox(args.ti)
-        ti.threshold(thresholds=[254],values=[0,1])
+        ti.threshold(thresholds=[1],values=[0,1])
         ti = ti.asArray()
     elif ".gslib" in args.ti:
         ti = Image.fromGslib(args.ti).asArray()
@@ -60,7 +60,10 @@ if __name__=="__main__":
     for n in tqdm(range(args.n_ti)):
         ix = randint(0, ti.shape[0]-sample_size[0]-1)
         iy = randint(0, ti.shape[1]-sample_size[1]-1)
-        iz = randint(0, ti.shape[2]-sample_size[2]-1)
+        if ti.shape[2]-sample_size[2]-1>0:
+            iz = randint(0, ti.shape[2]-sample_size[2]-1)
+        else:
+            iz = 0
 
         sample = ti[ix:ix+sample_size[0], iy:iy+sample_size[1], iz:iz+sample_size[2]]
 
