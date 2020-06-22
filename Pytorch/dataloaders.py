@@ -126,7 +126,8 @@ class Dataset3DasCuts(Dataset):
         for i, img in enumerate(self.imgs):
             if binarize:
                 img.threshold([1], [0,255])
-            self.imgs[i] = torch.Tensor(img.asArray() / 255.)
+            self.imgs[i] = torch.Tensor(img.asArray())
+            
 
         self.shape = [img.shape for img in self.imgs]
         self.batch_size = batch_size

@@ -14,9 +14,12 @@ from torch.utils.data import Dataset, DataLoader
 from imageio import imread, imsave
 from dataloaders import *
 from mpstool.img import Image
+from PIL import Image as PILImage
 import numpy as np
 import random
 from tqdm import tqdm
+
+from fid import inception, fid_score
 
 def extract_3cuts(tensor):
     bs,_,sx,sy,sz = tensor.size()
@@ -109,19 +112,23 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
         opt_gen.step()
 
 
-def generate(epoch, generator, N, args, device):
+def generate(epoch, generator, N, args, device, exportCuts=False):
+    os.makedirs("output/epoch{}".format(epoch), exist_ok=True)
     for i in range(N):
         output = generator.generate(1, device).cpu().detach().numpy()
         output = np.squeeze(output)
         output = (output * 255).astype(np.uint8)
+        if exportCuts:
+            cuts = extract_3cuts(output).cpu().numpy()
+            cuts = PILImage.fromarray(cuts)
+            cuts.save("output/epoch{}/{}_{}_cuts.png".format(epoch, args.name, i))
         output = Image.fromArray(output)
-        output.exportAsVox("output/sample_{}_epoch{}_{}.vox".format(args.name, epoch, i))
-
+        output.exportAsVox("output/epoch{}/{}_{}.vox".format(epoch, args.name, i))
 
 if __name__=="__main__":
 
     # Training settings
-    parser = argparse.ArgumentParser(description='ArchiSearch Guillaume IMT Atlantique')
+    parser = argparse.ArgumentParser(description='DiAGAN, pytorch version')
 
     parser.add_argument('-dx', type=str, default=None)
     parser.add_argument('-dy', type=str, default=None)
@@ -131,22 +138,19 @@ if __name__=="__main__":
 
     parser.add_argument("-checkpoint-freq", type=int, default=1)
     parser.add_argument("-name", "--name", type=str, default="gen")
+    parser.add_argument("--n-generated", type=int, default=3, help="number of samples generated at each epochs")
+
+    parser.add_argument("-fid", "--fid", action="store_true", 
+        help="Computes the Frechet Inception Distance after each training epochs, and outputs in a log file")
 
     # Optionnal Arguments
     parser.add_argument('-binarize', '--binarize', action="store_true")
-
     parser.add_argument('--lr', type=float, default=1E-3)
-
     parser.add_argument('--batch-size', type=int, default=10)
-
     parser.add_argument('--epoch-size', type=int, default=1000)
-
     parser.add_argument('--epochs', type=int, default=1000)
-
     parser.add_argument('--lmbd', type=float, default=10, help="gradient penalty weight")
-
     parser.add_argument('--n-critic', type=int, default=5)
-
     parser.add_argument("--seed", type=int, default=random.randint(0,1000000))
 
     args = parser.parse_args()
@@ -171,6 +175,22 @@ if __name__=="__main__":
     else:
         data = Dataset3DasCuts(args.dataset, args.n_critic*args.epoch_size, args.batch_size, (64, 64, 64), binarize=args.binarize)
 
+    if args.fid:
+        # We compute Inception statistics for the training image
+
+        inceptionModel = inception.InceptionV3()
+
+        os.makedirs("output/ti_samples", exist_ok=True)
+        for i in range(args.n_generated//args.batch_size):
+            samplebatch = data.get()
+            for j in range(samplebatch.size()[0]):
+                sample = (255*(samplebatch[j].cpu().permute(1,2,0).numpy())).astype(np.uint8)
+                sampleimg = PILImage.fromarray(sample)
+                sampleimg.save("output/ti_samples/sample_{}.png".format(i* args.batch_size + j))
+        files = [os.path.join("output/ti_samples", x) for x in os.listdir("output/ti_samples")]
+        muTI, sigmaTI = fid_score.calculate_activation_statistics(files, inceptionModel,
+                            batch_size=args.batch_size, cuda=torch.cuda.is_available(), verbose=True)
+
     generator = Generator(256)
     critic = Critic(n_cuts)
 
@@ -180,8 +200,18 @@ if __name__=="__main__":
     optimizer_crit = optim.Adam(critic.parameters(), lr=args.lr, betas=(0.5, 0.9))
 
     for epoch in range(1, args.epochs+1):
-        train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
-        generate(epoch, generator, 3, args, device)
+        #loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
+        generate(epoch, generator, args.n_generated, args, device, exportCuts=args.fid)
+        if args.fid:
+            # Compute FID
+            files = [os.path.join("output/epoch{}/".format(epoch),x) for x in os.listdir("output/epoch{}".format(epoch)) if '.png' in x]
+            mu, sigma = fid_score.calculate_activation_statistics(files, inceptionModel, 
+                            batch_size=args.batch_size, cuda=torch.cuda.is_available(), verbose=True)
+            distance = fid_score.calculate_frechet_distance(muTI, sigmaTI, mu, sigma)
+
+        with open("{}.log".format(args.name), "w") as f:
+            f.write("{distance}\n")
+
         if epoch%args.checkpoint_freq==0:
             torch.save(generator.state_dict(), "output/{}_e{}.model".format(args.name, epoch))
 
