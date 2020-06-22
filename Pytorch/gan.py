@@ -88,6 +88,7 @@ class Critic(nn.Module):
 
     def __init__(self, n_cuts=3):
         super(Critic,self).__init__()
+        self.n_cuts = n_cuts
     
         self.Lconv1 = nn.Sequential(
                 nn.Conv2d(n_cuts, 8, kernel_size=(3,3), padding=1),
