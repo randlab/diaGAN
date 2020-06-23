@@ -24,7 +24,7 @@ from fid import inception, fid_score
 def extract_3cuts(tensor):
     if isinstance(tensor,torch.Tensor):
         bs,_,sx,sy,sz = tensor.size()
-    elif isinstance(tensor, np.array):
+    elif isinstance(tensor, np.ndarray):
         bs,_,sx,sy,sz = tensor.shape
     else:
         raise Exception("'tensor' should be a numpy array or a pytorch tensor")
