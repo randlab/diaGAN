@@ -226,7 +226,7 @@ if __name__=="__main__":
     for epoch in range(1, args.epochs+1):
         loss = 0
         distance = 0
-        #loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
+        loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, args.n_generated, args, device, exportCuts=args.fid)
         if args.fid:
             # Compute FID
@@ -235,7 +235,7 @@ if __name__=="__main__":
                             batch_size=args.batch_size, cuda=torch.cuda.is_available(), verbose=True)
             distance = fid_score.calculate_frechet_distance(muTI, sigmaTI, mu, sigma)
 
-        with open("{}.log".format(args.name), "w") as f:
+        with open("{}.log".format(args.name), "a") as f:
             f.write(f"{distance}, {loss}\n")
 
         if epoch%args.checkpoint_freq==0:
