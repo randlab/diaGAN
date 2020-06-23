@@ -22,12 +22,7 @@ from tqdm import tqdm
 from fid import inception, fid_score
 
 def extract_3cuts(tensor):
-    if isinstance(tensor,torch.Tensor):
-        bs, _, sx, sy, sz = tensor.size()
-    elif isinstance(tensor, np.ndarray):
-        bs, _, sx, sy, sz = tensor.shape
-    else:
-        raise Exception("'tensor' should be a numpy array or a pytorch tensor")
+    bs, _, sx, sy, sz = tensor.size()
     rx = torch.randint(0, sx-1, (1,))[0]
     ry = torch.randint(0, sy-1, (1,))[0]
     rz = torch.randint(0, sz-1, (1,))[0]
@@ -142,12 +137,13 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
 def generate(epoch, generator, N, args, device, exportCuts=False):
     os.makedirs("output/epoch{}".format(epoch), exist_ok=True)
     for i in range(N):
-        output = generator.generate(1, device).cpu().detach().numpy()
-        output = (output * 255).astype(np.uint8)
+        output = generator.generate(1, device).cpu().detach()
         if exportCuts:
-            cuts = extract_3cuts(output).cpu().detach().numpy()
+            cuts = extract_3cuts(output).numpy()
             cuts = PILImage.fromarray(cuts)
             cuts.save("output/epoch{}/{}_{}_cuts.png".format(epoch, args.name, i))
+        output = output.numpy()
+        output = (output * 255).astype(np.uint8)
         output = np.squeeze(output)
         output = Image.fromArray(output)
         output.exportAsVox("output/epoch{}/{}_{}.vox".format(epoch, args.name, i))
