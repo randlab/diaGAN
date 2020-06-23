@@ -220,8 +220,6 @@ if __name__=="__main__":
             muTI.append(mu)
             sigmaTI.append(sigma)
 
-    raise Exception("meh")
-
     generator = Generator(256)
     critic = Critic(n_cuts)
 
