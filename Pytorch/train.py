@@ -201,6 +201,7 @@ if __name__=="__main__":
         # We compute Inception statistics for the training image
 
         inceptionModel = inception.InceptionV3()
+        inceptionModel.to(device)
 
         os.makedirs("output/ti_samples", exist_ok=True)
         for i in range(args.n_generated):
