@@ -89,15 +89,15 @@ if __name__=="__main__":
                                 (cY_ti_std, cY_ti), 
                                 (cZ_ti_std, cZ_ti)]:
         for smpl in data_dict:
-            for facies in smpl:
+            for facies in smpl.keys():
                 if facies not in std_dict:
-                    std_dict[facies] = [ data_dict[smpl][facies] ]
+                    std_dict[facies] = [ smpl[facies] ]
                 else:
-                    std_dict[facies].append( data_dict[smpl][facies] )
+                    std_dict[facies].append( smpl[facies] )
     
-    cX_ti_std = {k : np.std(cX_ti_std[k], axis=1) for k in cX_ti_std.keys() }
-    cY_ti_std = {k : np.std(cY_ti_std[k], axis=1) for k in cY_ti_std.keys() }
-    cZ_ti_std = {k : np.std(cZ_ti_std[k], axis=1) for k in cZ_ti_std.keys() }
+    cX_ti_std = {k : np.std(cX_ti_std[k], axis=0) for k in cX_ti_std.keys() }
+    cY_ti_std = {k : np.std(cY_ti_std[k], axis=0) for k in cY_ti_std.keys() }
+    cZ_ti_std = {k : np.std(cZ_ti_std[k], axis=0) for k in cZ_ti_std.keys() }
 
     # min -> mean - std
     # max -> mean + std
@@ -107,15 +107,15 @@ if __name__=="__main__":
     cY_ti_min, cY_ti_max = {}, {}
     cZ_ti_min, cZ_ti_max = {}, {}
 
-    for std_dict, mean_dict, min_dict, max_dict in 
+    for std_dict, mean_dict, min_dict, max_dict in \
         [(cX_ti_std, cX_ti_mean, cX_ti_min, cX_ti_max), 
          (cY_ti_std, cY_ti_mean, cY_ti_min, cY_ti_max), 
          (cZ_ti_std, cZ_ti_mean, cZ_ti_min, cZ_ti_max)]:
         for k in mean_dict.keys():
             min_dict[k] = mean_dict[k] - std_dict[k]
-            min_dict[k].clip(0,1)
+            min_dict[k] = min_dict[k].clip(0,1)
             max_dict[k] = mean_dict[k] + std_dict[k]
-            max_dict[k].clip(0,1)
+            max_dict[k] = max_dict[k].clip(0,1)
 
     # Read connectivity for the realizations
     cX = []
@@ -186,6 +186,7 @@ if __name__=="__main__":
     y_label = 'probability' if args.fun=="conn" else "$\gamma(t)$"
     for ax in axs.flat:
         ax.label_outer()
+        ax.set_ylim([0,1])
         ax.set(xlabel='distance (pixels)', ylabel=y_label)
 
     plt.show()
