@@ -106,7 +106,7 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
             # train with gradient penalty
             gp = gradient_penalty(critic, args, device, real_data_v.data, fake_data_v.data)
 
-            loss += (crit_fake.item() - crit_real.item())
+            loss += (crit_fake.item() + crit_real.item())
 
             crit_loss = crit_fake - crit_real + gp
             crit_loss.backward()
@@ -135,19 +135,20 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
     return loss / (args.epoch_size * args.n_critic)
 
 def generate(epoch, generator, N, args, device, exportCuts=False):
-    os.makedirs("output/epoch{}".format(epoch), exist_ok=True)
+    os.makedirs("output/epoch", exist_ok=True)
     for i in range(N):
         output = generator.generate(1, device).cpu().detach()
         if exportCuts:
             cuts = extract_3cuts(output)[0].permute(1,2,0)
             cuts = (255*cuts.numpy()).astype(np.uint8)
-            cuts = PILImage.fromarray(cuts)
-            cuts.save("output/epoch{}/{}_{}_cuts.png".format(epoch, args.name, i))
+            for ind,dim in enumerate(["x", "y", "z"]):
+                cut_dim = PILImage.fromarray(cuts[...,ind])
+                cut_dim.save("output/epoch/{}_{}_{}.png".format(args.name, i, dim))
         output = output.numpy()
         output = (output * 255).astype(np.uint8)
         output = np.squeeze(output)
         output = Image.fromArray(output)
-        output.exportAsVox("output/epoch{}/{}_{}.vox".format(epoch, args.name, i))
+        output.exportAsVox("output/epoch/{}_{}.vox".format(args.name, i))
 
 if __name__=="__main__":
 
@@ -207,13 +208,19 @@ if __name__=="__main__":
 
         os.makedirs("output/ti_samples", exist_ok=True)
         for i in range(args.n_generated):
-            sample = data.get()[0, ...]
-            sample = (255*(sample.cpu().permute(1,2,0).numpy())).astype(np.uint8)
-            sampleimg = PILImage.fromarray(sample)
-            sampleimg.save("output/ti_samples/sample_{}.png".format(i))
-        files = [os.path.join("output/ti_samples", x) for x in os.listdir("output/ti_samples")]
-        muTI, sigmaTI = fid_score.calculate_activation_statistics(files, inceptionModel,
-                            cuda=torch.cuda.is_available(), verbose=True)
+            sample = data.get()[0]
+            sample = (255*(sample.cpu().numpy())).astype(np.uint8)
+            for ind,dim in enumerate(["x", "y", "z"]):
+                sampleimg = PILImage.fromarray(sample[ind])
+                sampleimg.save("output/ti_samples/sample_{}_{}.png".format(i, dim))
+        muTI, sigmaTI = [], []
+        for dim in ["x", "y", "z"]:
+            files = [os.path.join("output/ti_samples", x) for x in os.listdir("output/ti_samples") if "{}.png".format(dim) in x]
+            mu, sigma = fid_score.calculate_activation_statistics(files, inceptionModel, cuda=torch.cuda.is_available())
+            muTI.append(mu)
+            sigmaTI.append(sigma)
+
+    raise Exception("meh")
 
     generator = Generator(256)
     critic = Critic(n_cuts)
@@ -227,15 +234,19 @@ if __name__=="__main__":
         distance = 0
         loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, args.n_generated, args, device, exportCuts=args.fid)
+
         if args.fid:
             # Compute FID
-            files = [os.path.join("output/epoch{}/".format(epoch),x) for x in os.listdir("output/epoch{}".format(epoch)) if '.png' in x]
-            mu, sigma = fid_score.calculate_activation_statistics(files, inceptionModel, 
-                            batch_size=args.batch_size, cuda=torch.cuda.is_available(), verbose=True)
-            distance = fid_score.calculate_frechet_distance(muTI, sigmaTI, mu, sigma)
+            distance = []
+
+            for ind, dim in enumerate(["x", "y", "z"]):
+                files = [os.path.join("output/epoch/",x) for x in os.listdir("output/epoch") if '{}.png'.format(dim) in x]
+                mu, sigma = fid_score.calculate_activation_statistics(files, inceptionModel, 
+                                batch_size=args.batch_size, cuda=torch.cuda.is_available())
+                distance.append(fid_score.calculate_frechet_distance(muTI[ind], sigmaTI[ind], mu, sigma))
 
         with open("{}.log".format(args.name), "a") as f:
-            f.write(f"{distance}, {loss}\n")
+            f.write(f"{distance[0]}, {distance[1]}, {distance[2]}, {loss}\n")
 
         if epoch%args.checkpoint_freq==0:
             torch.save(generator.state_dict(), "output/{}_e{}.model".format(args.name, epoch))

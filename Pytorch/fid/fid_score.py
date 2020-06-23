@@ -55,7 +55,11 @@ def imread(filename):
     """
     Loads an image file into a (height, width, 3) uint8 ndarray.
     """
-    return np.asarray(Image.open(filename), dtype=np.uint8)[..., :3]
+    img = np.asarray(Image.open(filename), dtype=np.uint8)
+    if len(img.shape)==2:
+        img = img.reshape(img.shape + (1,))
+        img = np.repeat(img, 3, axis=2)
+    return img
 
 
 def get_activations(files, model, batch_size=50, dims=2048,
@@ -213,7 +217,6 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
         files = list(path.glob('*.jpg')) + list(path.glob('*.png'))
         m, s = calculate_activation_statistics(files, model, batch_size,
                                                dims, cuda)
-
     return m, s
 
 
