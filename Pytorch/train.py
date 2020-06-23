@@ -23,9 +23,9 @@ from fid import inception, fid_score
 
 def extract_3cuts(tensor):
     if isinstance(tensor,torch.Tensor):
-        bs,_,sx,sy,sz = tensor.size()
+        bs, _, sx, sy, sz = tensor.size()
     elif isinstance(tensor, np.ndarray):
-        bs,_,sx,sy,sz = tensor.shape
+        bs, _, sx, sy, sz = tensor.shape
     else:
         raise Exception("'tensor' should be a numpy array or a pytorch tensor")
     rx = torch.randint(0, sx-1, (1,))[0]
@@ -143,12 +143,12 @@ def generate(epoch, generator, N, args, device, exportCuts=False):
     os.makedirs("output/epoch{}".format(epoch), exist_ok=True)
     for i in range(N):
         output = generator.generate(1, device).cpu().detach().numpy()
-        output = np.squeeze(output)
         output = (output * 255).astype(np.uint8)
         if exportCuts:
             cuts = extract_3cuts(output).cpu().detach().numpy()
             cuts = PILImage.fromarray(cuts)
             cuts.save("output/epoch{}/{}_{}_cuts.png".format(epoch, args.name, i))
+        output = np.squeeze(output)
         output = Image.fromArray(output)
         output.exportAsVox("output/epoch{}/{}_{}.vox".format(epoch, args.name, i))
 
