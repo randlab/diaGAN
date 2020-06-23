@@ -33,10 +33,10 @@ if __name__=="__main__":
 
     if ".vox" in args.ti:
         ti = Image.fromVox(args.ti)
-        ti.threshold(thresholds=[1],values=[0,1])
-        ti = ti.asArray()
     elif ".gslib" in args.ti:
-        ti = Image.fromGslib(args.ti).asArray()
+        ti = Image.fromGslib(args.ti)
+    ti.threshold(thresholds=[1],values=[0,1])
+    ti = ti.asArray()
 
     if args.fun == "conn":
         stat_fun = mpstool.connectivity.get_function
@@ -45,7 +45,7 @@ if __name__=="__main__":
     else:
         raise Exception("argument mode not recognized. Should be 'conn' or 'vario' ")
 
-    # Read connectivity for the TI : min and max of values
+    # Measurements for the TI : mean and stdv
     cX_ti_min= {}
     cX_ti_max= {}
 
