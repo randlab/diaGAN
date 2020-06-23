@@ -225,6 +225,7 @@ if __name__=="__main__":
 
     for epoch in range(1, args.epochs+1):
         loss = 0
+        distance = 0
         #loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, args.n_generated, args, device, exportCuts=args.fid)
         if args.fid:
@@ -235,7 +236,7 @@ if __name__=="__main__":
             distance = fid_score.calculate_frechet_distance(muTI, sigmaTI, mu, sigma)
 
         with open("{}.log".format(args.name), "w") as f:
-            f.write("{distance}, {loss}\n")
+            f.write(f"{distance}, {loss}\n")
 
         if epoch%args.checkpoint_freq==0:
             torch.save(generator.state_dict(), "output/{}_e{}.model".format(args.name, epoch))
