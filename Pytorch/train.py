@@ -22,7 +22,12 @@ from tqdm import tqdm
 from fid import inception, fid_score
 
 def extract_3cuts(tensor):
-    bs,_,sx,sy,sz = tensor.size()
+    if isinstance(tensor,torch.Tensor):
+        bs,_,sx,sy,sz = tensor.size()
+    elif isinstance(tensor, np.array):
+        bs,_,sx,sy,sz = tensor.shape
+    else:
+        raise Exception("'tensor' should be a numpy array or a pytorch tensor")
     rx = torch.randint(0, sx-1, (1,))[0]
     ry = torch.randint(0, sy-1, (1,))[0]
     rz = torch.randint(0, sz-1, (1,))[0]
@@ -141,7 +146,7 @@ def generate(epoch, generator, N, args, device, exportCuts=False):
         output = np.squeeze(output)
         output = (output * 255).astype(np.uint8)
         if exportCuts:
-            cuts = extract_3cuts(output).cpu().numpy()
+            cuts = extract_3cuts(output).cpu().detach().numpy()
             cuts = PILImage.fromarray(cuts)
             cuts.save("output/epoch{}/{}_{}_cuts.png".format(epoch, args.name, i))
         output = Image.fromArray(output)
