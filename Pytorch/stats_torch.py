@@ -46,14 +46,12 @@ if __name__=="__main__":
         raise Exception("argument mode not recognized. Should be 'conn' or 'vario' ")
 
     # Read connectivity for the TI : min and max of values
-    cX_ti_min= {}
-    cX_ti_max= {}
-
-    cY_ti_min = {}
-    cY_ti_max = {}
-
-    cZ_ti_min = {}
-    cZ_ti_max = {}
+    cX_ti = []
+    cY_ti = []
+    cZ_ti = []
+    cX_ti_mean = {}
+    cY_ti_mean = {}
+    cZ_ti_mean = {}
 
     sample_size = model.generate().to("cpu").size()[2:]
 
@@ -68,16 +66,56 @@ if __name__=="__main__":
         sample = ti[ix:ix+sample_size[0], iy:iy+sample_size[1], iz:iz+sample_size[2]]
 
         connX = stat_fun(sample, axis=1)
-        cX_ti_min = { k: np.minimum(cX_ti_min.get(k, 1), connX.get(k, 1)) for k in set(connX) }
-        cX_ti_max = { k: np.maximum(cX_ti_max.get(k, 0), connX.get(k, 0)) for k in set(connX) }
+        cX_ti.append(connX)
+        cX_ti_mean = { k: cX_ti_mean.get(k, 0) + connX.get(k, 0) for k in set(connX) }
 
         connY = stat_fun(sample, axis=0)
-        cY_ti_min = { k: np.minimum(cY_ti_min.get(k, 1), connY.get(k, 1)) for k in set(connY) }
-        cY_ti_max = { k: np.maximum(cY_ti_max.get(k, 0), connY.get(k, 0)) for k in set(connY) }
+        cY_ti.append(connY)
+        cY_ti_mean = { k: cY_ti_mean.get(k, 0) + connY.get(k, 0) for k in set(connY) }
 
         connZ = stat_fun(sample, axis=2)
-        cZ_ti_min = { k: np.minimum(cZ_ti_min.get(k, 1), connZ.get(k, 1)) for k in set(connZ) }
-        cZ_ti_max = { k: np.maximum(cZ_ti_max.get(k, 0), connZ.get(k, 0)) for k in set(connZ) }
+        cZ_ti.append(connZ)
+        cZ_ti_mean = { k: cZ_ti_mean.get(k, 0) + connZ.get(k, 0) for k in set(connZ) }
+    
+    cX_ti_mean = {k: cX_ti_mean.get(k,0)/args.n_ti for k in cX_ti_mean.keys()}
+    cY_ti_mean = {k: cY_ti_mean.get(k,0)/args.n_ti for k in cY_ti_mean.keys()}
+    cZ_ti_mean = {k: cZ_ti_mean.get(k,0)/args.n_ti for k in cZ_ti_mean.keys()}
+
+    cX_ti_std = {}
+    cY_ti_std = {}
+    cZ_ti_std = {}
+    
+    for std_dict, data_dict in [(cX_ti_std, cX_ti), 
+                                (cY_ti_std, cY_ti), 
+                                (cZ_ti_std, cZ_ti)]:
+        for smpl in data_dict:
+            for facies in smpl:
+                if facies not in std_dict:
+                    std_dict[facies] = [ data_dict[smpl][facies] ]
+                else:
+                    std_dict[facies].append( data_dict[smpl][facies] )
+    
+    cX_ti_std = {k : np.std(cX_ti_std[k], axis=1) for k in cX_ti_std.keys() }
+    cY_ti_std = {k : np.std(cY_ti_std[k], axis=1) for k in cY_ti_std.keys() }
+    cZ_ti_std = {k : np.std(cZ_ti_std[k], axis=1) for k in cZ_ti_std.keys() }
+
+    # min -> mean - std
+    # max -> mean + std
+    # clip at [0;1]
+ 
+    cX_ti_min, cX_ti_max = {}, {}
+    cY_ti_min, cY_ti_max = {}, {}
+    cZ_ti_min, cZ_ti_max = {}, {}
+
+    for std_dict, mean_dict, min_dict, max_dict in 
+        [(cX_ti_std, cX_ti_mean, cX_ti_min, cX_ti_max), 
+         (cY_ti_std, cY_ti_mean, cY_ti_min, cY_ti_max), 
+         (cZ_ti_std, cZ_ti_mean, cZ_ti_min, cZ_ti_max)]:
+        for k in mean_dict.keys():
+            min_dict[k] = mean_dict[k] - std_dict[k]
+            min_dict[k].clip(0,1)
+            max_dict[k] = mean_dict[k] + std_dict[k]
+            max_dict[k].clip(0,1)
 
     # Read connectivity for the realizations
     cX = []
@@ -122,6 +160,7 @@ if __name__=="__main__":
         for smpl in cX:
             axs[i,0].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,0].plot(cX_mean[c], color='red')
+        axs[i,0].plot(cX_ti_mean[c], color='black')
         title = "Orientation X" if vario_two else "Facies {}, Orientation X".format(i)
         axs[i,0].set_title(title)
 
@@ -130,6 +169,7 @@ if __name__=="__main__":
         for smpl in cY:
             axs[i,1].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,1].plot(cY_mean[c], color='red')
+        axs[i,1].plot(cY_ti_mean[c], color='black')
         title = "Orientation X" if vario_two else "Facies {}, Orientation Y".format(i)
         axs[i,1].set_title(title)
         
@@ -138,6 +178,7 @@ if __name__=="__main__":
         for smpl in cZ:
             axs[i,2].plot(smpl[c], color='green', alpha=ALPHA)
         axs[i,2].plot(cZ_mean[c], color='red')
+        axs[i,2].plot(cZ_ti_mean[c], color='black')
         title = "Orientation Z" if vario_two else "Facies {}, Orientation Z".format(i)
         axs[i,2].set_title(title)
 
