@@ -33,10 +33,10 @@ if __name__=="__main__":
 
     if ".vox" in args.ti:
         ti = Image.fromVox(args.ti)
-        ti.threshold(thresholds=[1],values=[0,1])
-        ti = ti.asArray()
     elif ".gslib" in args.ti:
-        ti = Image.fromGslib(args.ti).asArray()
+        ti = Image.fromGslib(args.ti)
+    ti.threshold(thresholds=[1],values=[0,1])
+    ti = ti.asArray()
 
     if args.fun == "conn":
         stat_fun = mpstool.connectivity.get_function
