@@ -203,12 +203,11 @@ if __name__=="__main__":
         inceptionModel = inception.InceptionV3()
 
         os.makedirs("output/ti_samples", exist_ok=True)
-        for i in range(args.n_generated//args.batch_size):
-            samplebatch = data.get()
-            for j in range(samplebatch.size()[0]):
-                sample = (255*(samplebatch[j].cpu().permute(1,2,0).numpy())).astype(np.uint8)
-                sampleimg = PILImage.fromarray(sample)
-                sampleimg.save("output/ti_samples/sample_{}.png".format(i* args.batch_size + j))
+        for i in range(args.n_generated):
+            sample = data.get()[0, ...]
+            sample = (255*(sample.cpu().permute(1,2,0).numpy())).astype(np.uint8)
+            sampleimg = PILImage.fromarray(sample)
+            sampleimg.save("output/ti_samples/sample_{}.png".format(i))
         files = [os.path.join("output/ti_samples", x) for x in os.listdir("output/ti_samples")]
         muTI, sigmaTI = fid_score.calculate_activation_statistics(files, inceptionModel,
                             cuda=torch.cuda.is_available(), verbose=True)
