@@ -211,7 +211,7 @@ if __name__=="__main__":
                 sampleimg.save("output/ti_samples/sample_{}.png".format(i* args.batch_size + j))
         files = [os.path.join("output/ti_samples", x) for x in os.listdir("output/ti_samples")]
         muTI, sigmaTI = fid_score.calculate_activation_statistics(files, inceptionModel,
-                            batch_size=args.batch_size, cuda=torch.cuda.is_available(), verbose=True)
+                            cuda=torch.cuda.is_available(), verbose=True)
 
     generator = Generator(256)
     critic = Critic(n_cuts)
