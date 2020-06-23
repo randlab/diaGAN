@@ -106,7 +106,7 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
             # train with gradient penalty
             gp = gradient_penalty(critic, args, device, real_data_v.data, fake_data_v.data)
 
-            loss += crit_fake.item() - crit_real.item()
+            loss += (crit_fake.item() - crit_real.item())
 
             crit_loss = crit_fake - crit_real + gp
             crit_loss.backward()
@@ -224,7 +224,6 @@ if __name__=="__main__":
     optimizer_crit = optim.Adam(critic.parameters(), lr=args.lr, betas=(0.5, 0.9))
 
     for epoch in range(1, args.epochs+1):
-        loss = 0
         distance = 0
         loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, args.n_generated, args, device, exportCuts=args.fid)
