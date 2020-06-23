@@ -139,8 +139,8 @@ def generate(epoch, generator, N, args, device, exportCuts=False):
     for i in range(N):
         output = generator.generate(1, device).cpu().detach()
         if exportCuts:
-            cuts = np.squeeze(extract_3cuts(output).numpy())
-            print(cuts.shape)
+            cuts = extract_3cuts(output)[0].permute(1,2,0)
+            cuts = (255*cuts.numpy()).astype(np.uint8)
             cuts = PILImage.fromarray(cuts)
             cuts.save("output/epoch{}/{}_{}_cuts.png".format(epoch, args.name, i))
         output = output.numpy()
