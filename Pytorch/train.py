@@ -69,6 +69,8 @@ def gradient_penalty(critic, args, device, real_data, fake_data):
 
 
 def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, data):
+    loss = 0
+
     for i_batch in tqdm(range(args.epoch_size)):
 
         # ------ Train critic
@@ -104,6 +106,8 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
             # train with gradient penalty
             gp = gradient_penalty(critic, args, device, real_data_v.data, fake_data_v.data)
 
+            loss += crit_fake.item() - crit_real.item()
+
             crit_loss = crit_fake - crit_real + gp
             crit_loss.backward()
             opt_crit.step()
@@ -128,6 +132,7 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
         gen_loss.backward()
         opt_gen.step()
 
+    return loss / (args.epoch_size * args.n_critic)
 
 def generate(epoch, generator, N, args, device, exportCuts=False):
     os.makedirs("output/epoch{}".format(epoch), exist_ok=True)
@@ -217,6 +222,7 @@ if __name__=="__main__":
     optimizer_crit = optim.Adam(critic.parameters(), lr=args.lr, betas=(0.5, 0.9))
 
     for epoch in range(1, args.epochs+1):
+        loss = 0
         #loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, args.n_generated, args, device, exportCuts=args.fid)
         if args.fid:
@@ -227,7 +233,7 @@ if __name__=="__main__":
             distance = fid_score.calculate_frechet_distance(muTI, sigmaTI, mu, sigma)
 
         with open("{}.log".format(args.name), "w") as f:
-            f.write("{distance}\n")
+            f.write("{distance}, {loss}\n")
 
         if epoch%args.checkpoint_freq==0:
             torch.save(generator.state_dict(), "output/{}_e{}.model".format(args.name, epoch))
