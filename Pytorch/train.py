@@ -69,7 +69,8 @@ def gradient_penalty(critic, args, device, real_data, fake_data):
 
 
 def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, data):
-    loss = 0
+    fake_loss = 0
+    real_loss = 0
 
     for i_batch in tqdm(range(args.epoch_size)):
 
@@ -106,7 +107,8 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
             # train with gradient penalty
             gp = gradient_penalty(critic, args, device, real_data_v.data, fake_data_v.data)
 
-            loss += (crit_fake.item() - crit_real.item())
+            fake_loss += crit_fake.item()
+            real_loss += crit_real.item()
 
             crit_loss = crit_fake - crit_real + gp
             crit_loss.backward()
@@ -132,7 +134,9 @@ def train_one_epoch(epoch, generator, opt_gen, critic, opt_crit, args, device, d
         gen_loss.backward()
         opt_gen.step()
 
-    return loss / (args.epoch_size * args.n_critic)
+    fake_loss /= (args.epoch_size * args.n_critic)
+    real_loss /= (args.epoch_size * args.n_critic)
+    return fake_loss, real_loss
 
 def generate(epoch, generator, N, args, device, exportCuts=False):
     os.makedirs("output/epoch", exist_ok=True)
@@ -230,7 +234,7 @@ if __name__=="__main__":
 
     for epoch in range(1, args.epochs+1):
         distance = 0
-        loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
+        fake_loss, real_loss = train_one_epoch(epoch, generator, optimizer_gen, critic, optimizer_crit, args, device, data)
         generate(epoch, generator, args.n_generated, args, device, exportCuts=args.fid)
 
         if args.fid:
@@ -244,7 +248,7 @@ if __name__=="__main__":
                 distance.append(fid_score.calculate_frechet_distance(muTI[ind], sigmaTI[ind], mu, sigma))
 
         with open("{}.log".format(args.name), "a") as f:
-            f.write(f"{distance[0]}, {distance[1]}, {distance[2]}, {loss}\n")
+            f.write(f"{distance[0]}, {distance[1]}, {distance[2]}, {fake_loss}, {real_loss}\n")
 
         if epoch%args.checkpoint_freq==0:
             torch.save(generator.state_dict(), "output/{}_e{}.model".format(args.name, epoch))
