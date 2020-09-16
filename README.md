@@ -1,56 +1,26 @@
 # DiAGAN
-3D simulations of earth textures using generative adversarial networks and 2D examples
+Code accompagning the article `3D Geological Image Synthesis From 2D Examples Using Generative Adversarial Networks`, Guillaume Coiffier, Philippe Renard and Sylvain Lefebvre
 
-Code accompagning this article : *TODO*
+Generative Adversarial Networks (GAN) are becoming an alternative to Multiple-point Statistics (MPS) techniques to generate stochastic fields from training images. But a difficulty for all the training image based techniques (including GAN and MPS) is to generate 3D fields when only 2D training data sets are available. In this paper, we introduce a novel approach called Dimension Augmenter GAN (DiAGAN) enabling GANs to generate 3D fields from 2D examples. The method is simple to implement and is based on the introduction of a random cut sampling step between the generator and the discriminator of a standard GAN.
 
-For pretrained models, training images and sample of outputs, see https://github.com/UniNE-CHYN/DiAGAN_Examples
+![GAN architecture for 2D to 3D synthesis](https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/gan3D.png)
 
-### References
-- [Generative Adversarial Nets, Goodfellow et al.](https://arxiv.org/pdf/1406.2661.pdf)
-- [Wasserstein GAN, Arjovsky et al.](https://arxiv.org/abs/1701.07875)
-- [Improved Training of Wasserstein GANs, Guljarani et al.](https://arxiv.org/abs/1704.00028)
+For pretrained models, training images and sample of outputs, see https://github.com/randlab/DiAGAN_Examples
 
 ### Dependencies
 python (>3.5) with the following librairies :
   - Pillow
   - Numpy
-  - Tensorflow
-  - Keras
   - mpstool : https://github.com/UniNE-CHYN/mps_toolbox
   - py-vox-io (optionnal) : https://github.com/gromgull/py-vox-io
-
-## Principle
-
-We added a random cut sampler between the output of the generator and the input of the discriminator. This allow us to generate 3D examples, but feed the discriminator with generated elements that have the same shape as example elements.
-
-![GAN architecture for 2D to 3D synthesis](https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/gan3D.png)
-
-The algorithm can also work without this additionnal element in the architecture, which gives a classical WGAN implementing the gradient penalty loss.
+  - Tensorflow (for the TF version)
+  - Keras (for the TF version)
+  - Pytorch (for the pytorch version)
 
 ## How to use
 See the `HOW_TO_USE.md` file
 
 ## Image Gallery
-### 2D synthesis
-
-| Training examples | Output images (tiled) |
-|-------------------|---------------|
-|<img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/ti/strebelle2500.png" width=300> | <img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/strebelle256_tile_small.png" width=300>|
-|<img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/ti/beton1500.png" width=300> | <img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/beton_tile_small.png" width=300> |
-|<img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/ti/karst_large.png" width=300> | <img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/karst_tile_small.png" width=300> |
-|<img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/ti/fracture.png" width=300> | <img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/fractures_tile_small.png" width=300>|
-|<img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/ti/braided.png" width=300> | <img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/braided_tile_small.png" width=300> |
-|<img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/ti/stone_colored.png" width=300>| <img src="https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/colored_tile_small.png" width=300> |
-
-### 3D synthesis out of 3D examples
-
-| Training examples | Output images | Output images |
-|-------------------|---------------|---------------|
-|![Channels](https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/ti/channels.png)  |   ![Channels](https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/channel1_1.png)| ![Channels](https://github.com/UniNE-CHYN/DiAGAN_Examples/blob/master/gallery/channel2_1.png) |
-
-### 3D synthesis out of 2D examples
-
-examples in the list below were fed to the GAN as cuts along three axis.
 
 | Training examples | Output images | Output images |
 |-------------------|---------------|---------------|
