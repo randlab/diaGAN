@@ -1,5 +1,7 @@
-# How to use- Tensorflow version
-3D Geological Image Synthesis From 2D Examples Using Generative Adversarial Networks
+# DiAGAN
+3D simulations of earth textures using generative adversarial networks and 2D examples
+
+## How to use
 
 ## Scripts
 
@@ -101,17 +103,6 @@ The script `train.py` has to be given a configuration file which should contain 
 - *LEARNING_RATE* : The learning rate of the GAN optimizer. Smaller learning rates lead to more stable but slower trainings.
 
 - *MULTI_GPU* : 0 or 1. If set to 1, allows the program to run on multiple GPUs
-
-#### stats_tf.py
-
-Utility files used for generating the analysis graphs of the paper, including connectivity and variograms.
-
-"-fun", "--fun", type=str, required=True
-'-model', "--model", type=str, required=True
-'-ti', "--ti", type=str, required=True
-'-output', "--output", type=str, default="output.csv"
-"-n-samples", "--n-samples", type=int, default=100
-"-n-ti", "--n-ti", type=int, default=100
 
 
 ### The input image
