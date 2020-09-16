@@ -18,7 +18,7 @@ python (>3.5) with the following librairies :
   - Pytorch (for the pytorch version)
 
 ## How to use
-See the `HOW_TO_USE.md` file
+See the `HOW_TO_USE.md` files in the Pytorch/ and Tensorflow/ folders
 
 ## Image Gallery
 
